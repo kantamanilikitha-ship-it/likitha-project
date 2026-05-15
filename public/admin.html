@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel - Likitha Store</title>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .admin-nav a.active { background: rgba(255,255,255,0.15); color: white; border-left: 3px solid white; }
+  </style>
+</head>
+<body>
+
+<!-- Admin Login Screen -->
+<div id="loginScreen" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)">
+  <div style="background:white;border-radius:12px;padding:40px;width:380px;box-shadow:0 4px 20px rgba(0,0,0,0.1);text-align:center">
+    <div style="font-size:3rem;margin-bottom:10px">🔧</div>
+    <h2 style="color:var(--primary-dark);margin-bottom:5px">Admin Panel</h2>
+    <p style="color:var(--text-light);margin-bottom:25px;font-size:0.9rem">Likitha Store Management</p>
+    <div class="form-group" style="text-align:left">
+      <label>Email</label>
+      <input type="email" id="adminEmail" value="admin@likitha.com" placeholder="admin@likitha.com"/>
+    </div>
+    <div class="form-group" style="text-align:left">
+      <label>Password</label>
+      <input type="password" id="adminPassword" value="admin123" placeholder="Password"/>
+    </div>
+    <button onclick="adminLogin()" style="width:100%;background:var(--primary);color:white;padding:12px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer">Login to Admin</button>
+    <a href="/" style="display:block;margin-top:15px;color:var(--text-light);font-size:0.85rem">← Back to Store</a>
+    <p style="margin-top:15px;font-size:0.8rem;color:var(--text-light)">Default: admin@likitha.com / admin123</p>
+  </div>
+</div>
+
+<!-- Admin Dashboard -->
+<div id="adminDashboard" style="display:none">
+  <div class="admin-layout">
+    <div class="admin-sidebar">
+      <div class="admin-logo">🛒 Likitha Admin</div>
+      <nav class="admin-nav">
+        <a href="#" onclick="showTab('dashboard')" class="active" id="tab-dashboard">📊 Dashboard</a>
+        <a href="#" onclick="showTab('orders')" id="tab-orders">📦 Orders</a>
+        <a href="#" onclick="showTab('products')" id="tab-products">🛍️ Products</a>
+        <a href="#" onclick="showTab('users')" id="tab-users">👥 Users</a>
+        <a href="/" style="margin-top:20px;border-top:1px solid rgba(255,255,255,0.1);padding-top:15px">🏠 View Store</a>
+        <a href="#" onclick="adminLogout()">🚪 Logout</a>
+      </nav>
+    </div>
+
+    <div class="admin-main">
+      <!-- DASHBOARD TAB -->
+      <div class="tab-content active" id="tab-content-dashboard">
+        <div class="admin-header">
+          <div class="admin-title">📊 Dashboard</div>
+          <div style="font-size:0.9rem;color:var(--text-light)" id="adminWelcome"></div>
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="admin-table-container">
+          <h3 style="margin-bottom:15px;font-size:1rem;font-weight:700">Recent Orders</h3>
+          <table class="admin-table" id="recentOrdersTable">
+            <thead><tr><th>Order ID</th><th>Customer</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="recentOrdersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ORDERS TAB -->
+      <div class="tab-content" id="tab-content-orders">
+        <div class="admin-header">
+          <div class="admin-title">📦 All Orders</div>
+          <button class="btn btn-primary" onclick="loadOrders()">🔄 Refresh</button>
+        </div>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead><tr><th>ID</th><th>Customer</th><th>Phone</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PRODUCTS TAB -->
+      <div class="tab-content" id="tab-content-products">
+        <div class="admin-header">
+          <div class="admin-title">🛍️ Products</div>
+          <button class="btn btn-primary" onclick="showAddProduct()">+ Add Product</button>
+        </div>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Featured</th><th>Actions</th></tr></thead>
+            <tbody id="productsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- USERS TAB -->
+      <div class="tab-content" id="tab-content-users">
+        <div class="admin-header">
+          <div class="admin-title">👥 Users</div>
+        </div>
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Joined</th></tr></thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Product Modal -->
+<div class="modal-overlay" id="productModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Add Product</div>
+    <input type="hidden" id="editProductId"/>
+    <div class="form-group"><label>Product Name *</label><input type="text" id="pName" placeholder="Product name"/></div>
+    <div class="form-group"><label>Description</label><textarea id="pDesc" placeholder="Product description" rows="2"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+      <div class="form-group"><label>Price (₹) *</label><input type="number" id="pPrice" placeholder="0"/></div>
+      <div class="form-group"><label>Original Price (₹)</label><input type="number" id="pOrigPrice" placeholder="0"/></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px">
+      <div class="form-group"><label>Stock *</label><input type="number" id="pStock" placeholder="0"/></div>
+      <div class="form-group"><label>Unit</label><input type="text" id="pUnit" placeholder="piece, kg, pack..."/></div>
+    </div>
+    <div class="form-group">
+      <label>Category *</label>
+      <select id="pCategory">
+        <option value="1">🛒 Kirana & Grocery</option>
+        <option value="2">🍪 Snacks & Beverages</option>
+        <option value="3">🧴 Personal Care</option>
+        <option value="4">✏️ Stationery</option>
+        <option value="5">🏠 Household</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="pFeatured" style="width:auto"/> Mark as Featured
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()" style="background:var(--bg)">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+async function adminLogin() {
+  const email = document.getElementById('adminEmail').value;
+  const password = document.getElementById('adminPassword').value;
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (data.success && data.user.role === 'admin') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'block';
+    document.getElementById('adminWelcome').textContent = `Welcome, ${data.user.name}`;
+    loadDashboard();
+  } else {
+    showToast(data.user && data.user.role !== 'admin' ? 'Not an admin account' : data.message, 'error');
+  }
+}
+
+async function adminLogout() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.reload();
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.admin-nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(`tab-content-${tab}`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+
+  if (tab === 'dashboard') loadDashboard();
+  else if (tab === 'orders') loadOrders();
+  else if (tab === 'products') loadProducts();
+  else if (tab === 'users') loadUsers();
+}
+
+async function loadDashboard() {
+  const res = await fetch('/api/admin/stats');
+  const data = await res.json();
+  if (!data.success) return;
+
+  const { stats, recentOrders } = data;
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${stats.totalOrders}</div><div class="stat-label">Total Orders</div></div>
+    <div class="stat-card" style="border-color:var(--accent)"><div class="stat-value" style="color:var(--accent)">₹${stats.totalRevenue.toFixed(0)}</div><div class="stat-label">Total Revenue</div></div>
+    <div class="stat-card" style="border-color:#1565c0"><div class="stat-value" style="color:#1565c0">${stats.totalProducts}</div><div class="stat-label">Products</div></div>
+    <div class="stat-card" style="border-color:#6a1b9a"><div class="stat-value" style="color:#6a1b9a">${stats.totalUsers}</div><div class="stat-label">Customers</div></div>
+    <div class="stat-card" style="border-color:#e65100"><div class="stat-value" style="color:#e65100">${stats.pendingOrders}</div><div class="stat-label">Pending Orders</div></div>
+  `;
+
+  const statusColors = { pending: 'status-pending', confirmed: 'status-confirmed', delivered: 'status-delivered', cancelled: 'status-cancelled' };
+  document.getElementById('recentOrdersBody').innerHTML = recentOrders.map(o => `
+    <tr>
+      <td>#${o.id}</td>
+      <td>${o.customer_name}</td>
+      <td>₹${o.total.toFixed(2)}</td>
+      <td><span class="status-badge ${statusColors[o.status] || 'status-pending'}">${o.status}</span></td>
+      <td>${new Date(o.created_at).toLocaleDateString('en-IN')}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadOrders() {
+  const res = await fetch('/api/admin/orders');
+  const data = await res.json();
+  const statusColors = { pending: 'status-pending', confirmed: 'status-confirmed', delivered: 'status-delivered', cancelled: 'status-cancelled' };
+  document.getElementById('ordersBody').innerHTML = data.orders.map(o => `
+    <tr>
+      <td>#${o.id}</td>
+      <td>${o.customer_name}<br><small style="color:var(--text-light)">${o.customer_email}</small></td>
+      <td>${o.customer_phone}</td>
+      <td>₹${o.total.toFixed(2)}</td>
+      <td>${o.payment_method.toUpperCase()}</td>
+      <td>
+        <select onchange="updateOrderStatus(${o.id}, this.value)" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);font-size:0.8rem">
+          <option value="pending" ${o.status==='pending'?'selected':''}>Pending</option>
+          <option value="confirmed" ${o.status==='confirmed'?'selected':''}>Confirmed</option>
+          <option value="shipped" ${o.status==='shipped'?'selected':''}>Shipped</option>
+          <option value="delivered" ${o.status==='delivered'?'selected':''}>Delivered</option>
+          <option value="cancelled" ${o.status==='cancelled'?'selected':''}>Cancelled</option>
+        </select>
+      </td>
+      <td>${new Date(o.created_at).toLocaleDateString('en-IN')}</td>
+      <td><span class="status-badge ${statusColors[o.status] || 'status-pending'}">${o.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+async function updateOrderStatus(id, status) {
+  await fetch(`/api/admin/orders/${id}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  showToast('Order status updated');
+}
+
+async function loadProducts() {
+  const res = await fetch('/api/admin/products');
+  const data = await res.json();
+  document.getElementById('productsBody').innerHTML = data.products.map(p => `
+    <tr>
+      <td>${p.id}</td>
+      <td>${p.name}</td>
+      <td>${p.category_name || '-'}</td>
+      <td>₹${p.price}</td>
+      <td>${p.stock}</td>
+      <td>${p.featured ? '⭐' : '-'}</td>
+      <td>
+        <button class="btn btn-warning btn-sm" onclick="editProduct(${p.id})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}')">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function loadUsers() {
+  const res = await fetch('/api/admin/users');
+  const data = await res.json();
+  document.getElementById('usersBody').innerHTML = data.users.map(u => `
+    <tr>
+      <td>${u.id}</td>
+      <td>${u.name}</td>
+      <td>${u.email}</td>
+      <td>${u.phone || '-'}</td>
+      <td><span class="status-badge ${u.role==='admin'?'status-confirmed':'status-pending'}">${u.role}</span></td>
+      <td>${new Date(u.created_at).toLocaleDateString('en-IN')}</td>
+    </tr>
+  `).join('');
+}
+
+function showAddProduct() {
+  document.getElementById('modalTitle').textContent = 'Add New Product';
+  document.getElementById('editProductId').value = '';
+  document.getElementById('pName').value = '';
+  document.getElementById('pDesc').value = '';
+  document.getElementById('pPrice').value = '';
+  document.getElementById('pOrigPrice').value = '';
+  document.getElementById('pStock').value = '';
+  document.getElementById('pUnit').value = 'piece';
+  document.getElementById('pCategory').value = '1';
+  document.getElementById('pFeatured').checked = false;
+  document.getElementById('productModal').style.display = 'flex';
+}
+
+async function editProduct(id) {
+  const res = await fetch(`/api/products/${id}`);
+  const data = await res.json();
+  const p = data.product;
+  document.getElementById('modalTitle').textContent = 'Edit Product';
+  document.getElementById('editProductId').value = p.id;
+  document.getElementById('pName').value = p.name;
+  document.getElementById('pDesc').value = p.description || '';
+  document.getElementById('pPrice').value = p.price;
+  document.getElementById('pOrigPrice').value = p.original_price || '';
+  document.getElementById('pStock').value = p.stock;
+  document.getElementById('pUnit').value = p.unit;
+  document.getElementById('pCategory').value = p.category_id;
+  document.getElementById('pFeatured').checked = p.featured === 1;
+  document.getElementById('productModal').style.display = 'flex';
+}
+
+async function saveProduct() {
+  const id = document.getElementById('editProductId').value;
+  const body = {
+    name: document.getElementById('pName').value,
+    description: document.getElementById('pDesc').value,
+    price: parseFloat(document.getElementById('pPrice').value),
+    original_price: parseFloat(document.getElementById('pOrigPrice').value) || null,
+    stock: parseInt(document.getElementById('pStock').value),
+    unit: document.getElementById('pUnit').value,
+    category_id: document.getElementById('pCategory').value,
+    featured: document.getElementById('pFeatured').checked
+  };
+
+  const url = id ? `/api/admin/products/${id}` : '/api/admin/products';
+  const method = id ? 'PUT' : 'POST';
+
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (data.success) {
+    showToast(data.message);
+    closeModal();
+    loadProducts();
+  } else {
+    showToast(data.message, 'error');
+  }
+}
+
+async function deleteProduct(id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  const res = await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (data.success) { showToast('Product deleted'); loadProducts(); }
+}
+
+function closeModal() { document.getElementById('productModal').style.display = 'none'; }
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Check if already logged in
+async function checkAdminAuth() {
+  const res = await fetch('/api/auth/me');
+  const data = await res.json();
+  if (data.user && data.user.role === 'admin') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'block';
+    document.getElementById('adminWelcome').textContent = `Welcome, ${data.user.name}`;
+    loadDashboard();
+  }
+}
+
+checkAdminAuth();
+</script>
+</body>
+</html>

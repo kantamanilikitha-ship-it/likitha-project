@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register - Likitha Store</title>
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="/" class="nav-logo"><span>🛒</span><div>Likitha Store</div></a>
+    <div class="nav-actions">
+      <a href="/" class="nav-btn">🏠 Home</a>
+    </div>
+  </div>
+</nav>
+
+<div class="auth-container">
+  <div class="auth-card">
+    <div style="text-align:center;font-size:3rem;margin-bottom:10px">👤</div>
+    <div class="auth-title">Create Account</div>
+    <div class="auth-subtitle">Join Likitha Store for the best deals</div>
+
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="name" placeholder="Your full name"/>
+    </div>
+    <div class="form-group">
+      <label>Email Address *</label>
+      <input type="email" id="email" placeholder="your@email.com"/>
+    </div>
+    <div class="form-group">
+      <label>Phone Number</label>
+      <input type="tel" id="phone" placeholder="+91 98765 43210"/>
+    </div>
+    <div class="form-group">
+      <label>Password *</label>
+      <input type="password" id="password" placeholder="Min 6 characters"/>
+    </div>
+
+    <button class="btn-place-order" onclick="register()">Create Account →</button>
+
+    <div class="auth-link">
+      Already have an account? <a href="/login">Login here</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+async function register() {
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!name || !email || !password) { showToast('Please fill required fields', 'error'); return; }
+  if (password.length < 6) { showToast('Password must be at least 6 characters', 'error'); return; }
+
+  const btn = document.querySelector('.btn-place-order');
+  btn.textContent = 'Creating account...';
+  btn.disabled = true;
+
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, phone, password })
+  });
+
+  const data = await res.json();
+  btn.disabled = false;
+  btn.textContent = 'Create Account →';
+
+  if (data.success) {
+    showToast('Account created! Redirecting...');
+    setTimeout(() => window.location = '/', 1000);
+  } else {
+    showToast(data.message, 'error');
+  }
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

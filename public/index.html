@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Likitha Store - Kirana, Grocery & Stationery</title>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    .promo-bar { background: var(--accent); color: white; text-align: center; padding: 8px; font-size: 0.85rem; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<div class="promo-bar">🎉 Free delivery on orders above ₹299 | Cash on Delivery available!</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="/" class="nav-logo">
+      <span>🛒</span>
+      <div>
+        <div>Likitha Store</div>
+        <div style="font-size:0.65rem;opacity:0.8;font-weight:400" class="tagline">Kirana & General Store</div>
+      </div>
+    </a>
+    <div class="nav-search">
+      <input type="text" id="searchInput" placeholder="Search products, brands..." />
+      <button onclick="doSearch()">🔍</button>
+    </div>
+    <div class="nav-actions">
+      <a href="/login" class="nav-btn" id="loginBtn">👤 Login</a>
+      <a href="/cart" class="nav-btn cart-btn">
+        🛒 Cart <span class="cart-count" id="cartCount">0</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <h1>🛒 Your Neighbourhood Store, Online!</h1>
+  <p>Fresh groceries, kirana essentials & stationery — delivered to your door</p>
+  <div class="hero-badges">
+    <span class="badge">🌿 Fresh Products</span>
+    <span class="badge">🚚 Fast Delivery</span>
+    <span class="badge">💰 Best Prices</span>
+    <span class="badge">🔒 Secure Checkout</span>
+  </div>
+</section>
+
+<!-- CATEGORIES -->
+<div class="section">
+  <div class="section-title">🏷️ Shop by Category</div>
+  <div class="categories-grid" id="categoriesGrid">
+    <div class="category-card active" onclick="filterCategory('all', this)">
+      <div class="icon">🏪</div>
+      <div class="name">All Products</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURED -->
+<div class="section" style="padding-top:0">
+  <div class="products-header">
+    <div class="section-title" id="sectionTitle">⭐ Featured Products</div>
+    <div class="filter-sort">
+      <select id="sortSelect" onchange="loadProducts()">
+        <option value="">Sort By</option>
+        <option value="price_asc">Price: Low to High</option>
+        <option value="price_desc">Price: High to Low</option>
+        <option value="name">Name A-Z</option>
+      </select>
+    </div>
+  </div>
+  <div class="products-grid" id="productsGrid">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:#999">Loading products...</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-section">
+      <h4>🛒 Likitha Store</h4>
+      <p>Your trusted neighbourhood kirana store, now online. Quality products at the best prices.</p>
+    </div>
+    <div class="footer-section">
+      <h4>Quick Links</h4>
+      <a href="/">Home</a>
+      <a href="/cart">My Cart</a>
+      <a href="/orders">My Orders</a>
+      <a href="/login">Login / Register</a>
+    </div>
+    <div class="footer-section">
+      <h4>Categories</h4>
+      <a href="#" onclick="filterCategory('1')">Kirana & Grocery</a>
+      <a href="#" onclick="filterCategory('2')">Snacks & Beverages</a>
+      <a href="#" onclick="filterCategory('3')">Personal Care</a>
+      <a href="#" onclick="filterCategory('4')">Stationery</a>
+    </div>
+    <div class="footer-section">
+      <h4>Contact Us</h4>
+      <p>📍 Main Road, Your City</p>
+      <p>📞 +91 98765 43210</p>
+      <p>✉️ hello@likithastore.com</p>
+      <p>⏰ Mon-Sun: 8AM - 9PM</p>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2024 Likitha Store. All rights reserved. Made with ❤️</div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentCategory = 'all';
+let currentSearch = '';
+
+// Load categories
+async function loadCategories() {
+  const res = await fetch('/api/products/meta/categories');
+  const data = await res.json();
+  const grid = document.getElementById('categoriesGrid');
+  data.categories.forEach(cat => {
+    const div = document.createElement('div');
+    div.className = 'category-card';
+    div.innerHTML = `<div class="icon">${cat.icon}</div><div class="name">${cat.name}</div>`;
+    div.onclick = () => filterCategory(cat.id, div);
+    grid.appendChild(div);
+  });
+}
+
+function filterCategory(id, el) {
+  currentCategory = id;
+  document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const title = document.getElementById('sectionTitle');
+  title.textContent = id === 'all' ? '⭐ Featured Products' : '🛍️ Products';
+  loadProducts();
+}
+
+async function loadProducts() {
+  const sort = document.getElementById('sortSelect').value;
+  let url = `/api/products?sort=${sort}`;
+  if (currentCategory !== 'all') url += `&category=${currentCategory}`;
+  if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
+  else if (currentCategory === 'all') url += '&featured=true';
+
+  const res = await fetch(url);
+  const data = await res.json();
+  renderProducts(data.products);
+}
+
+function getCategoryEmoji(name) {
+  const map = { 'Kirana': '🌾', 'Snacks': '🍪', 'Personal': '🧴', 'Stationery': '✏️', 'Household': '🏠' };
+  for (const key in map) if (name && name.includes(key)) return map[key];
+  return '📦';
+}
+
+function renderProducts(products) {
+  const grid = document.getElementById('productsGrid');
+  if (!products.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">🔍</div><h3>No products found</h3><p>Try a different search or category</p></div>`;
+    return;
+  }
+  grid.innerHTML = products.map(p => {
+    const discount = p.original_price ? Math.round((1 - p.price / p.original_price) * 100) : 0;
+    const emoji = getCategoryEmoji(p.category_name);
+    return `
+      <div class="product-card">
+        ${discount > 0 ? `<div class="product-badge">${discount}% OFF</div>` : ''}
+        <div class="product-img-placeholder">${emoji}</div>
+        <div class="product-info">
+          <div class="product-category">${p.category_name || ''}</div>
+          <div class="product-name">${p.name}</div>
+          <div class="product-unit">Per ${p.unit}</div>
+          <div class="product-price">
+            <span class="price-current">₹${p.price}</span>
+            ${p.original_price ? `<span class="price-original">₹${p.original_price}</span>` : ''}
+            ${discount > 0 ? `<span class="price-discount">Save ₹${p.original_price - p.price}</span>` : ''}
+          </div>
+          ${p.stock > 0
+            ? `<button class="btn-add-cart" onclick="addToCart(${p.id}, this)">🛒 Add to Cart</button>`
+            : `<div class="out-of-stock">Out of Stock</div>`
+          }
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function addToCart(productId, btn) {
+  const res = await fetch('/api/cart/add', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ productId, quantity: 1 })
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('cartCount').textContent = data.count;
+    btn.textContent = '✅ Added!';
+    btn.classList.add('added');
+    setTimeout(() => { btn.textContent = '🛒 Add to Cart'; btn.classList.remove('added'); }, 1500);
+    showToast('Added to cart!');
+  } else {
+    showToast(data.message, 'error');
+  }
+}
+
+function doSearch() {
+  currentSearch = document.getElementById('searchInput').value.trim();
+  currentCategory = 'all';
+  document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+  document.querySelector('.category-card').classList.add('active');
+  document.getElementById('sectionTitle').textContent = currentSearch ? `🔍 Results for "${currentSearch}"` : '⭐ Featured Products';
+  loadProducts();
+}
+
+document.getElementById('searchInput').addEventListener('keypress', e => { if (e.key === 'Enter') doSearch(); });
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function loadCartCount() {
+  const res = await fetch('/api/cart');
+  const data = await res.json();
+  document.getElementById('cartCount').textContent = data.count;
+}
+
+async function checkAuth() {
+  const res = await fetch('/api/auth/me');
+  const data = await res.json();
+  if (data.user) {
+    const btn = document.getElementById('loginBtn');
+    btn.textContent = `👤 ${data.user.name.split(' ')[0]}`;
+    btn.href = data.user.role === 'admin' ? '/admin' : '/orders';
+  }
+}
+
+loadCategories();
+loadProducts();
+loadCartCount();
+checkAuth();
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - Likitha Store</title>
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="/" class="nav-logo"><span>🛒</span><div>Likitha Store</div></a>
+    <div class="nav-actions">
+      <a href="/" class="nav-btn">🏠 Home</a>
+    </div>
+  </div>
+</nav>
+
+<div class="auth-container">
+  <div class="auth-card">
+    <div style="text-align:center;font-size:3rem;margin-bottom:10px">🔐</div>
+    <div class="auth-title">Welcome Back!</div>
+    <div class="auth-subtitle">Login to your Likitha Store account</div>
+
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="email" placeholder="your@email.com"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Enter your password"/>
+    </div>
+
+    <button class="btn-place-order" onclick="login()">Login →</button>
+
+    <div class="auth-link">
+      Don't have an account? <a href="/register">Register here</a>
+    </div>
+    <div class="auth-link" style="margin-top:8px">
+      <a href="/admin" style="color:var(--text-light);font-size:0.8rem">Admin Login →</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+async function login() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!email || !password) { showToast('Please fill all fields', 'error'); return; }
+
+  const btn = document.querySelector('.btn-place-order');
+  btn.textContent = 'Logging in...';
+  btn.disabled = true;
+
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await res.json();
+  btn.disabled = false;
+  btn.textContent = 'Login →';
+
+  if (data.success) {
+    showToast('Login successful! Redirecting...');
+    setTimeout(() => {
+      window.location = data.user.role === 'admin' ? '/admin' : '/';
+    }, 1000);
+  } else {
+    showToast(data.message, 'error');
+  }
+}
+
+document.addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
